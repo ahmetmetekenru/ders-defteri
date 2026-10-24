@@ -1,6 +1,6 @@
 // Uygulama dosyalarını cihazda tutar; internet yokken de defter açılır.
 // Dosyalar değişince CACHE adındaki sürümü artır.
-const CACHE = "ders-defteri-v8";
+const CACHE = "ders-defteri-v9";
 const SHELL = [
   "./",
   "index.html",
@@ -13,7 +13,8 @@ const SHELL = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: "reload" -> tarayıcının eski kopyası değil, sunucudaki yeni dosyalar alınır
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
@@ -36,7 +37,7 @@ self.addEventListener("fetch", (e) => {
     caches.open(CACHE).then(async (cache) => {
       const cached = await cache.match(req, { ignoreSearch: true }) ||
         (req.mode === "navigate" ? await cache.match("index.html") : null);
-      const fresh = fetch(req).then((res) => {
+      const fresh = fetch(isFont ? req : new Request(req, { cache: "no-cache" })).then((res) => {
         if (res && (res.ok || res.type === "opaque")) cache.put(req, res.clone());
         return res;
       }).catch(() => null);
