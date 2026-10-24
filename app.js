@@ -155,6 +155,15 @@ function storageError() {
 /* ================= Eşitleme (Google Apps Script) ================= */
 
 let syncKey = recall("key") || "";
+
+// Kurulum linki (…/#bagla=ANAHTAR) açılınca anahtar bu cihaza kaydedilir ve adres çubuğundan silinir
+(function readSetupLink() {
+  const m = location.hash.match(/^#bagla=([A-Za-z0-9-]+)$/);
+  if (!m) return;
+  syncKey = m[1];
+  remember("key", syncKey);
+  history.replaceState(null, "", location.pathname + location.search);
+})();
 let syncing = false;
 let syncTimer = null;
 let lastSyncAt = Number(recall("lastSync")) || 0;
