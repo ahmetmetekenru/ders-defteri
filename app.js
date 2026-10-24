@@ -1205,9 +1205,17 @@ function setBarHidden(hidden) {
   applyZoom();
 }
 
+let barBeforeFocus = false;
 function setFocus(on) {
   document.body.classList.toggle("focus", on);
   closeSide();
+  // Tam ekrana araçlar küçültülmüş girilir; "Araçlar" ile açılıp ▴ ile yine küçültülebilir
+  if (on) {
+    barBeforeFocus = document.body.classList.contains("bar-hidden");
+    setBarHidden(true);
+  } else {
+    setBarHidden(barBeforeFocus);
+  }
   if (on) {
     const el = document.documentElement;
     if (el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(() => {});

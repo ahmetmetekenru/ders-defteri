@@ -124,7 +124,7 @@ body .toolbar { padding-right: calc(max(16px, env(safe-area-inset-right, 0px)) +
 
 /* Tam ekran: sol panel, araçlar ve sayfa üstündeki yazılar kaybolur, sayfa ekranı doldurur */
 body.focus .app { grid-template-columns: minmax(0, 1fr); }
-body.focus aside, body.focus .scrim, body.focus .toolbar, body.focus .jumpbar, body.focus .float-ctl, body.focus .page-bar { display: none !important; }
+body.focus aside, body.focus .scrim, body.focus #toggleSide, body.focus .jumpbar, body.focus .page-bar { display: none !important; }
 body.focus #pages { padding-top: 16px; gap: 16px; }
 
 /* Sol üstte sayfa numarasıyla ve işaretlerle hızlı geçiş */
