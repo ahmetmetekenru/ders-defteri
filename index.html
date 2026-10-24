@@ -111,9 +111,21 @@ body.bar-hidden .toolbar { display: none; }
 .float-ctl:hover, .float-ctl:focus-within { opacity: 1; }
 .float-ctl .tb { background: rgba(19,19,21,.85); backdrop-filter: blur(6px); min-height: 34px; padding: 5px 10px; font-size: 13px; }
 
-/* Tam ekran: sol panel kapanır, sayfa ekranı doldurur */
+/* Tam ekran düğmesi her zaman sağ üst köşede durur; aynı düğme tam ekrandan da çıkarır */
+.fs-btn { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 9px); right: max(10px, env(safe-area-inset-right, 0px)); z-index: 30; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: rgba(19,19,21,.88); backdrop-filter: blur(6px); color: var(--fg); }
+.fs-btn:hover { border-color: var(--muted); }
+.fs-btn svg { width: 20px; height: 20px; }
+.fs-btn .fs-close, body.focus .fs-btn .fs-open { display: none; }
+body.focus .fs-btn .fs-close { display: block; }
+body.focus .fs-btn { opacity: .5; }
+body.focus .fs-btn:hover, body.focus .fs-btn:focus-visible { opacity: 1; }
+body .toolbar { padding-right: calc(max(16px, env(safe-area-inset-right, 0px)) + 46px); }
+.float-ctl { right: calc(max(16px, env(safe-area-inset-right, 0px)) + 46px); }
+
+/* Tam ekran: sol panel, araçlar ve sayfa üstündeki yazılar kaybolur, sayfa ekranı doldurur */
 body.focus .app { grid-template-columns: minmax(0, 1fr); }
-body.focus aside, body.focus .scrim, body.focus #toggleSide { display: none !important; }
+body.focus aside, body.focus .scrim, body.focus .toolbar, body.focus .jumpbar, body.focus .float-ctl, body.focus .page-bar { display: none !important; }
+body.focus #pages { padding-top: 16px; gap: 16px; }
 
 /* Sol üstte sayfa numarasıyla ve işaretlerle hızlı geçiş */
 .jumpbar { position: sticky; top: 10px; left: 16px; z-index: 4; width: max-content; margin: 10px 0 0 16px; display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; background: rgba(19,19,21,.88); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 10px; }
@@ -184,6 +196,11 @@ body.mode-eraser .ink { cursor: cell; }
 </head>
 <body>
 
+<button class="fs-btn" id="fullToggle" type="button" title="Tam ekran" aria-label="Tam ekran">
+  <svg class="fs-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  <svg class="fs-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+</button>
+
 <div class="app">
   <aside id="side">
     <div class="side-head">
@@ -248,8 +265,6 @@ body.mode-eraser .ink { cursor: cell; }
         <button class="tb primary" id="addPageBtn" type="button">+ A4 sayfa</button>
       </div>
       <div class="group bar-end">
-        <button class="tb" id="fullBtn" type="button" title="Sayfaları tam ekran göster">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Tam ekran</button>
         <button class="tb" id="hideBar" type="button" title="Araçları gizle" aria-label="Araçları gizle">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
       </div>
@@ -258,7 +273,6 @@ body.mode-eraser .ink { cursor: cell; }
     <div class="float-ctl" id="floatCtl" hidden>
       <button class="tb" id="showBar" type="button" title="Araçları göster">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>Araçlar</button>
-      <button class="tb" id="exitFull" type="button">✕ Tam ekrandan çık</button>
     </div>
 
     <div id="scroller">

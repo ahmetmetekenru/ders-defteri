@@ -1192,10 +1192,10 @@ window.addEventListener("resize", applyZoom);
 function updateFloat() {
   const hidden = document.body.classList.contains("bar-hidden");
   const focus = document.body.classList.contains("focus");
-  $("#floatCtl").hidden = !hidden && !focus;
-  $("#showBar").hidden = !hidden;
-  $("#exitFull").hidden = !focus;
-  $("#fullBtn").hidden = focus;
+  $("#floatCtl").hidden = !hidden;
+  const btn = $("#fullToggle");
+  btn.title = focus ? "Tam ekrandan çık" : "Tam ekran";
+  btn.setAttribute("aria-label", btn.title);
 }
 
 function setBarHidden(hidden) {
@@ -1209,12 +1209,10 @@ function setFocus(on) {
   document.body.classList.toggle("focus", on);
   closeSide();
   if (on) {
-    setBarHidden(true);
     const el = document.documentElement;
     if (el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(() => {});
-  } else {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    setBarHidden(false);
+  } else if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
   }
   updateFloat();
   applyZoom();
@@ -1222,8 +1220,7 @@ function setFocus(on) {
 
 $("#hideBar").addEventListener("click", () => setBarHidden(true));
 $("#showBar").addEventListener("click", () => setBarHidden(false));
-$("#fullBtn").addEventListener("click", () => setFocus(true));
-$("#exitFull").addEventListener("click", () => setFocus(false));
+$("#fullToggle").addEventListener("click", () => setFocus(!document.body.classList.contains("focus")));
 // Esc ile tam ekrandan çıkılınca görünüm de normale döner
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement && document.body.classList.contains("focus")) setFocus(false);
