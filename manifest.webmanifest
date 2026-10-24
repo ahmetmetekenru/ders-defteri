@@ -1,0 +1,16 @@
+{
+  "name": "Ders Defteri",
+  "short_name": "Defter",
+  "description": "Siyah A4 sayfalı ders defteri. İnternetsiz çalışır, bağlanınca Google Drive'a eşitlenir.",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#131315",
+  "theme_color": "#131315",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
