@@ -51,7 +51,7 @@ function handleSync(req) {
     const cur = index.pages[p.id];
     if (cur && cur.deleted) return;
     if (cur && cur.updated >= p.updated) return;
-    const body = JSON.stringify({ id: p.id, html: p.html || "", strokes: p.strokes || [], style: p.style || "lined", updated: p.updated });
+    const body = JSON.stringify({ id: p.id, html: p.html || "", strokes: p.strokes || [], style: p.style || "lined", mark: p.mark || null, updated: p.updated });
     let fileId = cur && cur.fileId;
     if (fileId) {
       DriveApp.getFileById(fileId).setContent(body);

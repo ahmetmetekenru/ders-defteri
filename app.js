@@ -139,7 +139,7 @@ function savePageLocal(page) {
   page.timer = null;
   if (page.built) page.html = page.content.innerHTML; // HTML yalnızca kayıt anında okunur, her tuşta değil
   page.dirty = false;
-  const rec = { id: page.id, html: page.html, strokes: page.strokes, style: page.style, updated: page.updated };
+  const rec = { id: page.id, html: page.html, strokes: page.strokes, style: page.style, mark: page.mark, updated: page.updated };
   idb.put("pages", page.id, rec).catch(storageError);
   markPending("p:" + page.id);
 }
@@ -252,16 +252,18 @@ async function applyRemote(res) {
     const cached = pageCache.get(r.id);
     const localUpdated = cached ? cached.updated : ((await idb.get("pages", r.id)) || {}).updated || 0;
     if (localUpdated >= r.updated) continue;
-    await idb.put("pages", r.id, { id: r.id, html: r.html, strokes: r.strokes, style: r.style, updated: r.updated });
+    await idb.put("pages", r.id, { id: r.id, html: r.html, strokes: r.strokes, style: r.style, mark: r.mark || null, updated: r.updated });
     if (cached) {
       if (cached.dirty || (cached.built && document.activeElement === cached.content)) continue;
       cached.html = r.html || "";
       cached.strokes = normStrokes(r.strokes);
       cached.style = r.style || "lined";
+      cached.mark = r.mark || null;
       cached.updated = r.updated;
       if (cached.built) {
         cached.content.innerHTML = cached.html || "<p><br></p>";
         applyPaper(cached);
+        renderMark(cached);
         requestRedraw(cached);
       }
     }
@@ -380,6 +382,7 @@ function pageFromData(id, d) {
     html: d.html || "",
     strokes: normStrokes(d.strokes),
     style: d.style || "lined",
+    mark: d.mark || null,
     updated: d.updated || 0,
     timer: null, built: false, visible: false, dirty: false
   };
@@ -403,15 +406,21 @@ function buildPage(page) {
   wrap._pageId = page.id;
   const bar = document.createElement("div");
   bar.className = "page-bar";
+  const labelBox = document.createElement("span");
   const label = document.createElement("span");
+  const markName = document.createElement("span");
+  markName.className = "mark-name";
+  labelBox.append(label, markName);
   const actions = document.createElement("div");
   actions.className = "actions";
-  bar.append(label, actions);
+  bar.append(labelBox, actions);
 
   const sheet = document.createElement("div");
   sheet.className = "page";
   const tag = document.createElement("div");
   tag.className = "page-tag";
+  const ribbon = document.createElement("div");
+  ribbon.className = "mark-ribbon";
   const content = document.createElement("div");
   content.className = "content";
   content.contentEditable = "true";
@@ -421,12 +430,13 @@ function buildPage(page) {
   canvas.className = "ink";
   canvas.width = 0;
   canvas.height = 0;
-  sheet.append(tag, content, canvas);
+  sheet.append(tag, ribbon, content, canvas);
   wrap.append(bar, sheet);
 
-  Object.assign(page, { wrap, label, actions, sheet, tag, content, canvas, ctx: canvas.getContext("2d"), built: true });
+  Object.assign(page, { wrap, label, markName, ribbon, actions, sheet, tag, content, canvas, ctx: canvas.getContext("2d"), built: true });
   sheet._page = page;
   applyPaper(page);
+  renderMark(page);
 
   content.addEventListener("input", () => afterEdit(page));
   content.addEventListener("paste", (e) => {
@@ -456,19 +466,137 @@ function applyPaper(page) {
   page.sheet.classList.add("paper-" + page.style);
 }
 
-function renderPageActions(page, confirming) {
+function renderPageActions(page, mode) {
   page.actions.replaceChildren();
-  if (confirming) {
+  if (mode === true) {
     const q = document.createElement("span");
     q.textContent = "Sayfa silinsin mi?";
     page.actions.append(q, miniButton("Evet, sil", () => deletePage(page), true), miniButton("Vazgeç", () => renderPageActions(page, false)));
+  } else if (mode === "mark") {
+    page.actions.append(markForm(page));
   } else {
     page.actions.append(
+      miniButton(page.mark ? "★ İşaret" : "☆ İşaret koy", () => renderPageActions(page, "mark")),
       miniButton("+ Altına sayfa", () => addPageAfter(page, true)),
       miniButton("Sil", () => renderPageActions(page, true))
     );
   }
 }
+
+/* ================= Sayfa işaretleri ================= */
+
+function renderMark(page) {
+  if (!page.built) return;
+  const m = page.mark;
+  page.ribbon.hidden = !m;
+  page.markName.textContent = m ? "★ " + m.name : "";
+  if (m) {
+    page.ribbon.style.background = m.color;
+    page.markName.style.color = m.color;
+  }
+}
+
+function markForm(page) {
+  const lesson = lessonOfPage(page);
+  const num = lesson ? lesson.pages.indexOf(page.id) + 1 : 1;
+  let color = page.mark ? page.mark.color : COLORS[1].v;
+  const form = document.createElement("div");
+  form.className = "mark-form";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = "mark-" + page.id;
+  input.maxLength = 40;
+  input.value = page.mark ? page.mark.name : "Sayfa " + num;
+  input.setAttribute("aria-label", "İşaret adı");
+  const colors = colorPicker(color, (v) => { color = v; });
+  const save = () => {
+    page.mark = { name: input.value.trim() || "Sayfa " + num, color };
+    afterMarkChange(page);
+  };
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+  form.append(input, colors, miniButton("Kaydet", save));
+  if (page.mark) form.append(miniButton("Kaldır", () => { page.mark = null; afterMarkChange(page); }, true));
+  form.append(miniButton("Vazgeç", () => renderPageActions(page, false)));
+  setTimeout(() => input.focus(), 30);
+  return form;
+}
+
+function afterMarkChange(page) {
+  renderMark(page);
+  renderPageActions(page, false);
+  schedulePageSave(page);
+  renderMarkSelect();
+}
+
+function renderMarkSelect() {
+  const sel = $("#markJump");
+  const lesson = activeLesson();
+  sel.replaceChildren();
+  const marks = [];
+  if (lesson) {
+    lesson.pages.forEach((id, i) => {
+      const p = pageCache.get(id);
+      if (p && p.mark) marks.push(new Option("★ " + p.mark.name + " · s." + (i + 1), id));
+    });
+  }
+  sel.append(new Option(marks.length ? "İşaretler (" + marks.length + ")" : "İşaret yok", ""));
+  marks.forEach((o) => sel.append(o));
+  sel.disabled = !marks.length;
+}
+
+$("#markJump").addEventListener("change", (e) => {
+  const p = pageCache.get(e.target.value);
+  e.target.value = "";
+  if (p && p.built) { p.wrap.scrollIntoView({ block: "start" }); setCurrent(p); }
+});
+
+/* ================= Sayfa numarasıyla geçiş ================= */
+
+function updateJumpBar() {
+  const lesson = activeLesson();
+  $("#jumpbar").hidden = !lesson;
+  if (!lesson) return;
+  $("#pageTotal").textContent = "/ " + lesson.pages.length;
+  $("#pageJump").max = String(lesson.pages.length);
+  renderMarkSelect();
+  trackPage();
+}
+
+function goToPage(n) {
+  const lesson = activeLesson();
+  if (!lesson || !n) return;
+  n = Math.min(Math.max(1, Math.round(n)), lesson.pages.length);
+  const p = pageCache.get(lesson.pages[n - 1]);
+  if (p && p.built) { p.wrap.scrollIntoView({ block: "start" }); setCurrent(p); }
+  $("#pageJump").value = String(n);
+}
+
+// Kaydırırken sol üstteki numara o an görünen sayfayı gösterir
+function trackPage() {
+  const lesson = activeLesson();
+  const input = $("#pageJump");
+  if (!lesson || document.activeElement === input) return;
+  const line = scroller.getBoundingClientRect().top + 90;
+  let idx = 0;
+  for (let i = 0; i < lesson.pages.length; i++) {
+    const p = pageCache.get(lesson.pages[i]);
+    if (!p || !p.built) continue;
+    if (p.wrap.getBoundingClientRect().top <= line) idx = i; else break;
+  }
+  input.value = String(idx + 1);
+}
+
+let trackRaf = 0;
+scroller.addEventListener("scroll", () => {
+  if (trackRaf) return;
+  trackRaf = requestAnimationFrame(() => { trackRaf = 0; trackPage(); });
+}, { passive: true });
+
+$("#pageJump").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { goToPage(Number(e.target.value)); e.target.blur(); }
+});
+$("#pageJump").addEventListener("change", (e) => goToPage(Number(e.target.value)));
+$("#pageJump").addEventListener("focus", (e) => e.target.select());
 
 function miniButton(text, onClick, danger) {
   const b = document.createElement("button");
@@ -490,6 +618,7 @@ function labelPages() {
     p.tag.textContent = lesson.name + " · " + (i + 1);
     p.sheet.style.setProperty("--lesson", lesson.color);
   });
+  updateJumpBar();
 }
 
 function setCurrent(page) {
@@ -539,6 +668,7 @@ async function openLesson(id, opts) {
 function showEmpty(on) {
   $("#empty").hidden = !on;
   $("#loading").hidden = true;
+  if (on) $("#jumpbar").hidden = true;
   if (on) pagesEl.replaceChildren();
 }
 

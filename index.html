@@ -114,7 +114,19 @@ body.bar-hidden .toolbar { display: none; }
 /* Tam ekran: sol panel kapanır, sayfa ekranı doldurur */
 body.focus .app { grid-template-columns: minmax(0, 1fr); }
 body.focus aside, body.focus .scrim, body.focus #toggleSide { display: none !important; }
-body.bar-hidden #pages { padding-top: 54px; }
+
+/* Sol üstte sayfa numarasıyla ve işaretlerle hızlı geçiş */
+.jumpbar { position: sticky; top: 10px; left: 16px; z-index: 4; width: max-content; margin: 10px 0 0 16px; display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; background: rgba(19,19,21,.88); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 10px; }
+.jumpbar input { width: 58px; min-height: 32px; text-align: center; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; font-family: var(--mono); font-size: 14px; -moz-appearance: textfield; }
+.jumpbar input::-webkit-inner-spin-button, .jumpbar input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.jumpbar select.tb { min-height: 32px; padding: 4px 8px; font-size: 13px; max-width: 46vw; }
+
+/* Sayfa işaretleri */
+.mark-ribbon { position: absolute; top: 0; left: 2.5cqw; width: 2.6cqw; height: 5.5cqw; z-index: 3; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%); pointer-events: none; }
+.page-bar .mark-name { margin-left: 8px; letter-spacing: .04em; text-transform: none; font-weight: 500; }
+.mark-form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+.mark-form input { width: 140px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-family: var(--body); font-size: 13px; text-transform: none; letter-spacing: 0; }
+.mark-form .mini-swatches button { width: 20px; height: 20px; }
 .toolbar { flex: none; z-index: 5; background: var(--ground); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px 16px; }
 .group { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .sep { width: 1px; align-self: stretch; background: var(--line); }
@@ -127,7 +139,7 @@ select.tb { padding-right: 8px; background: var(--ground); }
 .lesson-chip .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 
 #scroller { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
-#pages { display: flex; flex-direction: column; align-items: center; gap: 28px; width: max-content; min-width: 100%; padding: 28px 16px 90px; --page-w: 820px; }
+#pages { display: flex; flex-direction: column; align-items: center; gap: 28px; width: max-content; min-width: 100%; padding: 14px 16px 90px; --page-w: 820px; }
 .page-wrap { width: var(--page-w); container-type: inline-size; display: flex; flex-direction: column; gap: 8px; }
 .page-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; min-height: 30px; }
 .page-wrap.current .page-bar > span { color: var(--fg); }
@@ -250,6 +262,12 @@ body.mode-eraser .ink { cursor: cell; }
     </div>
 
     <div id="scroller">
+      <div class="jumpbar" id="jumpbar" hidden>
+        <label for="pageJump" class="label">Sayfa</label>
+        <input id="pageJump" type="number" min="1" value="1" inputmode="numeric" enterkeyhint="go">
+        <span id="pageTotal" class="label">/ 1</span>
+        <select class="tb" id="markJump" aria-label="İşaretli sayfaya git"></select>
+      </div>
       <div id="loading">Defter açılıyor…</div>
       <div id="pages"></div>
       <div class="empty" id="empty" hidden>
