@@ -1,6 +1,6 @@
 // Uygulama dosyalarını cihazda tutar; internet yokken de defter açılır.
 // Dosyalar değişince CACHE adındaki sürümü artır.
-const CACHE = "ders-defteri-v3";
+const CACHE = "ders-defteri-v4";
 const SHELL = [
   "./",
   "index.html",

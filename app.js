@@ -1040,7 +1040,8 @@ $("#addPageBtn").addEventListener("click", () => {
 /* ================= Yakınlaştırma (telefonda okunur boyut) ================= */
 
 function fitWidth() {
-  return Math.max(240, Math.min(scroller.clientWidth - 32, 820));
+  const max = document.body.classList.contains("focus") ? 1400 : 820;
+  return Math.max(240, Math.min(scroller.clientWidth - 32, max));
 }
 let zoomRaf = 0;
 function applyZoom() {
@@ -1055,6 +1056,48 @@ $("#zoom").addEventListener("change", (e) => {
   applyZoom();
 });
 window.addEventListener("resize", applyZoom);
+
+/* ================= Araç çubuğunu gizleme ve tam ekran ================= */
+
+function updateFloat() {
+  const hidden = document.body.classList.contains("bar-hidden");
+  const focus = document.body.classList.contains("focus");
+  $("#floatCtl").hidden = !hidden && !focus;
+  $("#showBar").hidden = !hidden;
+  $("#exitFull").hidden = !focus;
+  $("#fullBtn").hidden = focus;
+}
+
+function setBarHidden(hidden) {
+  document.body.classList.toggle("bar-hidden", hidden);
+  remember("barHidden", hidden ? "1" : "");
+  updateFloat();
+  applyZoom();
+}
+
+function setFocus(on) {
+  document.body.classList.toggle("focus", on);
+  closeSide();
+  if (on) {
+    setBarHidden(true);
+    const el = document.documentElement;
+    if (el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(() => {});
+  } else {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    setBarHidden(false);
+  }
+  updateFloat();
+  applyZoom();
+}
+
+$("#hideBar").addEventListener("click", () => setBarHidden(true));
+$("#showBar").addEventListener("click", () => setBarHidden(false));
+$("#fullBtn").addEventListener("click", () => setFocus(true));
+$("#exitFull").addEventListener("click", () => setFocus(false));
+// Esc ile tam ekrandan çıkılınca görünüm de normale döner
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && document.body.classList.contains("focus")) setFocus(false);
+});
 
 /* ================= Kalem ve silgi ================= */
 
@@ -1256,7 +1299,7 @@ async function start() {
   const savedZoom = Number(recall("zoom"));
   state.zoom = savedZoom || (fitWidth() < 520 ? 2 : 1);
   $("#zoom").value = String(state.zoom);
-  applyZoom();
+  setBarHidden(recall("barHidden") === "1");
 
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
