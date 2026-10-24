@@ -165,7 +165,13 @@ function scheduleSync(delay) {
   syncTimer = setTimeout(sync, delay == null ? 4000 : delay);
 }
 
+// Google ara sıra JSON yerine hata sayfası döndürüyor; bir kez daha denenir
 async function postJSON(body) {
+  try { return await postOnce(body); }
+  catch (e) { await new Promise((r) => setTimeout(r, 2000)); return postOnce(body); }
+}
+
+async function postOnce(body) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 45000);
   try {
